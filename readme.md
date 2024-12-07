@@ -53,7 +53,7 @@ The `ishihara` function takes an options object with the following properties:
 
 | Option              | Type                         | Default                 | Description                                                                    |
 | ------------------- | ---------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| circlePackerOptions | Partial<circlePackerOptions> | {}                      | Options for the circle packer                                                  |
+| circlePackerOptions | Partial<circlePackerOptions> | {}                      | [Options for the CirclePacker](https://github.com/Mtillmann/circlepacker)                                                  |
 | textColors          | string[]                     | ['#ffffff']             | Colors for the text                                                            |
 | backgroundColors    | string[]                     | ['#000000']             | Colors for the background                                                      |
 | text                | string                       | '8'                     | Text to display, max 2 characters                                              |
