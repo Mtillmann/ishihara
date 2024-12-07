@@ -1,0 +1,45 @@
+{
+  "name": "@mtillmann/ishihara",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"see test/index.html\"",
+    "build": "rimraf dist && tsup && rollup -c",
+    "dev": "tsup src/index.ts --watch --onSuccess 'rollup -c'",
+    "publish": "eslint . --fix && npm run build && npm publish --access public"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Martin Tillmann<mtillmann@gmail.com>",
+  "homepage": "https://github.com/Mtillmann/ishihara",
+  "bugs": {
+    "url": "https://github.com/Mtillmann/ishihara/issues"
+  },
+  "keywords": [
+    "ishihara",
+    "color",
+    "blindness",
+    "test",
+    "colorblindness",
+    "color-vision-deficiency",
+    "svg"
+  ],
+  "license": "MIT",
+  "description": "render ishihara plates for color vision deficiency tests",
+  "dependencies": {
+    "@mtillmann/circlepacker": "^0.1.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "eslint": "^9.16.0",
+    "neostandard": "^0.11.9",
+    "rimraf": "^6.0.1",
+    "rollup": "^2.79.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}
