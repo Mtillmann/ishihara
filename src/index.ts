@@ -1,5 +1,5 @@
-import Ishihara from './Ishihara'
+import ishihara from './ishihara'
 import type { Options } from './types/Options'
 
-export default Ishihara
+export default ishihara
 export type { Options }

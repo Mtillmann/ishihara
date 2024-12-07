@@ -1,4 +1,4 @@
-// src/Ishihara.ts
+// src/ishihara.ts
 import { fromCanvas } from "@mtillmann/circlepacker";
 function applySpacing(base, value) {
   if (typeof value === "number") {
@@ -131,7 +131,7 @@ function measureText(text, font) {
     edgeLength: Math.max(textWidth, textHeight)
   };
 }
-function Ishihara_default(options = {}) {
+function ishihara_default(options = {}) {
   const circlePackerDefaultOptions = {};
   const defaultOptions = {
     textColors: [
@@ -209,7 +209,7 @@ function Ishihara_default(options = {}) {
 }
 
 // src/index.ts
-var src_default = Ishihara_default;
+var src_default = ishihara_default;
 export {
   src_default as default
 };

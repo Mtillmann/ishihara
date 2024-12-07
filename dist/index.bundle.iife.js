@@ -176,7 +176,7 @@ var ishihara = (function () {
     return fromContext2D(ctx, options);
   }
 
-  // src/Ishihara.ts
+  // src/ishihara.ts
   function applySpacing(base, value) {
     if (typeof value === "number") {
       return value + base;
@@ -308,7 +308,7 @@ var ishihara = (function () {
       edgeLength: Math.max(textWidth, textHeight)
     };
   }
-  function Ishihara_default(options = {}) {
+  function ishihara_default(options = {}) {
     const circlePackerDefaultOptions = {};
     const defaultOptions = {
       textColors: [
@@ -386,7 +386,7 @@ var ishihara = (function () {
   }
 
   // src/index.ts
-  var src_default = Ishihara_default;
+  var src_default = ishihara_default;
 
   return src_default;
 
