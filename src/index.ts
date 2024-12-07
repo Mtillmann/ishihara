@@ -1,5 +1,5 @@
-import Ishihara from "./Ishihara";
-import type { Options } from './types/Options';
+import Ishihara from './Ishihara'
+import type { Options } from './types/Options'
 
-export default Ishihara;
-export type { Options };
+export default Ishihara
+export type { Options }
