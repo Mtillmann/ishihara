@@ -57,7 +57,7 @@ The `ishihara` function takes an options object with the following properties:
 | textColors          | string[]                     | ['#ffffff']             | Colors for the text                                                            |
 | backgroundColors    | string[]                     | ['#000000']             | Colors for the background                                                      |
 | text                | string                       | '8'                     | Text to display, max 2 characters                                              |
-| font                | string                       | 'bold 256px sans-serif' | Font for the text                                                              |
+| font                | string                       | 'bold 256px sans-serif' | Font for the text ([see](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/font))                                                              |
 | radius              | number\|'auto'             | 'auto'                  | Radius of the circles, 'auto' will calculate the radius based on the text size |
 | padding             | number\|string             | '20%'                   | Padding around the text, can be a number or a percentage                       |
 | margin              | number\|string             | '10%'                   | Margin around the image, can be a number or a percentage                       |
