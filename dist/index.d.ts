@@ -12,6 +12,6 @@ type Options = {
     debug: boolean;
 };
 
-declare function export_default(options?: Partial<Options>): CirclePacker | Record<string, any>;
+declare function export_default(options?: Partial<Options>): Promise<CirclePacker | Record<string, any>>;
 
 export { type Options, export_default as default };

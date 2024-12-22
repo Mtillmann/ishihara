@@ -157,7 +157,7 @@ function measureText (text: string, font: string) {
   }
 }
 
-export default function (options: Partial<Options> = {}):CirclePacker | Record<string, any> {
+export default async function (options: Partial<Options> = {}):Promise<CirclePacker | Record<string, any>> {
   const circlePackerDefaultOptions: Partial<circlePackerOptions> = {}
 
   const defaultOptions: Options = {

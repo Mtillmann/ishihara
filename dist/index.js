@@ -131,7 +131,7 @@ function measureText(text, font) {
     edgeLength: Math.max(textWidth, textHeight)
   };
 }
-function ishihara_default(options = {}) {
+async function ishihara_default(options = {}) {
   const circlePackerDefaultOptions = {};
   const defaultOptions = {
     textColors: [
