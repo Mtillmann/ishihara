@@ -1,6 +1,6 @@
 {
   "name": "@mtillmann/ishihara",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "description": "render ishihara plates for color vision deficiency tests",
   "dependencies": {
-    "@mtillmann/circlepacker": "^0.1.1"
+    "@mtillmann/circlepacker": "^0.2.1"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.3.0",
