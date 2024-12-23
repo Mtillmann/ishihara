@@ -1,3 +1,58 @@
+// src/Core.ts
+var Core_default = {
+  pack(imageData, imageWidth, spareCircles, options) {
+    let i = spareCircles.length;
+    const placedCircles = [];
+    const dims = { width: imageWidth, height: imageData.data.length / imageWidth / 4 };
+    while (i > 0) {
+      i--;
+      const circle = spareCircles[i];
+      let safety = 1e3;
+      while (!circle.x && safety-- > 0) {
+        const x = Math.random() * dims.width;
+        const y = Math.random() * dims.height;
+        if (this.isCircleInside(imageData, dims.width, x, y, circle.radius, options.higherAccuracy, options.minAlpha)) {
+          if (!this.touchesPlacedCircle(x, y, circle.radius, placedCircles, options.spacing)) {
+            circle.x = x;
+            circle.y = y;
+            placedCircles.push(circle);
+          }
+        }
+      }
+    }
+    return placedCircles;
+  },
+  isFilled(imageData, x, y, width, minAlpha) {
+    x = Math.round(x);
+    y = Math.round(y);
+    return imageData.data[(width * y + x) * 4 + 3] > minAlpha;
+  },
+  isCircleInside(imageData, width, x, y, radius, higherAccuracy, minAlpha) {
+    if (!this.isFilled(imageData, x, y - radius, width, minAlpha)) return false;
+    if (!this.isFilled(imageData, x, y + radius, width, minAlpha)) return false;
+    if (!this.isFilled(imageData, x + radius, y, width, minAlpha)) return false;
+    if (!this.isFilled(imageData, x - radius, y, width, minAlpha)) return false;
+    if (higherAccuracy) {
+      const o = Math.cos(Math.PI / 4);
+      if (!this.isFilled(imageData, x + o, y + o, width, minAlpha)) return false;
+      if (!this.isFilled(imageData, x - o, y + o, width, minAlpha)) return false;
+      if (!this.isFilled(imageData, x - o, y - o, width, minAlpha)) return false;
+      if (!this.isFilled(imageData, x + o, y - o, width, minAlpha)) return false;
+    }
+    return true;
+  },
+  touchesPlacedCircle(x, y, r, placedCircles, spacing) {
+    return placedCircles.some((circle) => {
+      return this.dist(x, y, circle.x, circle.y) < circle.radius + r + spacing;
+    });
+  },
+  dist(x1, y1, x2, y2) {
+    const a = x1 - x2;
+    const b = y1 - y2;
+    return Math.sqrt(a * a + b * b);
+  }
+};
+
 // src/CirclePacker.ts
 var CirclePacker = class {
   defaultOptions = {
@@ -8,7 +63,9 @@ var CirclePacker = class {
     higherAccuracy: false,
     colors: "auto",
     minAlpha: 1,
-    background: "transparent"
+    background: "transparent",
+    useMainThread: false,
+    reuseWorker: true
   };
   defaultExportOptions = {
     scale: globalThis.devicePixelRatio || 1,
@@ -19,6 +76,7 @@ var CirclePacker = class {
   spareCircles = [];
   placedCircles = [];
   dims = { width: 0, height: 0 };
+  worker = null;
   constructor(options = {}) {
     this.options = { ...this.defaultOptions, ...options };
     if (["transparent", null, "", false, void 0].includes(this.options.background)) {
@@ -30,35 +88,6 @@ var CirclePacker = class {
       });
     }
     this.spareCircles.sort((a, b) => a.radius - b.radius);
-  }
-  isFilled(imageData, x, y) {
-    x = Math.round(x);
-    y = Math.round(y);
-    return imageData.data[(this.dims.width * y + x) * 4 + 3] > this.options.minAlpha;
-  }
-  isCircleInside(imageData, x, y, r) {
-    if (!this.isFilled(imageData, x, y - r)) return false;
-    if (!this.isFilled(imageData, x, y + r)) return false;
-    if (!this.isFilled(imageData, x + r, y)) return false;
-    if (!this.isFilled(imageData, x - r, y)) return false;
-    if (this.options.higherAccuracy) {
-      const o = Math.cos(Math.PI / 4);
-      if (!this.isFilled(imageData, x + o, y + o)) return false;
-      if (!this.isFilled(imageData, x - o, y + o)) return false;
-      if (!this.isFilled(imageData, x - o, y - o)) return false;
-      if (!this.isFilled(imageData, x + o, y - o)) return false;
-    }
-    return true;
-  }
-  touchesPlacedCircle(x, y, r) {
-    return this.placedCircles.some((circle) => {
-      return this.dist(x, y, circle.x, circle.y) < circle.radius + r + this.options.spacing;
-    });
-  }
-  dist(x1, y1, x2, y2) {
-    const a = x1 - x2;
-    const b = y1 - y2;
-    return Math.sqrt(a * a + b * b);
   }
   getCircleColor(imageData, x, y) {
     if (this.options.colors === "auto") {
@@ -75,29 +104,36 @@ var CirclePacker = class {
     }
     return this.options.colors[Math.floor(Math.random() * this.options.colors.length)];
   }
-  render(imageData, imageWidth) {
-    let i = this.spareCircles.length;
-    this.dims = { width: imageWidth, height: imageData.data.length / imageWidth / 4 };
-    while (i > 0) {
-      i--;
-      const circle = this.spareCircles[i];
-      let safety = 1e3;
-      while (!circle.x && safety-- > 0) {
-        const x = Math.random() * this.dims.width;
-        const y = Math.random() * this.dims.height;
-        if (this.isCircleInside(imageData, x, y, circle.radius)) {
-          if (!this.touchesPlacedCircle(x, y, circle.radius)) {
-            const color = this.getCircleColor(imageData, x, y);
-            if (color) {
-              circle.x = x;
-              circle.y = y;
-              circle.color = color;
-              this.placedCircles.push(circle);
-            }
-          }
-        }
+  async pack(imageData, imageWidth) {
+    let circles = [];
+    if (typeof Worker === "undefined" || this.options.useMainThread) {
+      circles = Core_default.pack(imageData, imageWidth, this.spareCircles, this.options);
+    } else {
+      if (!this.worker) {
+        this.worker = new Worker("data:text/javascript;base64,dmFyIENvcmVfZGVmYXVsdD17cGFjayhpLHQsZSxzKXtsZXQgcj1lLmxlbmd0aDtjb25zdCBhPVtdLGQ9e3dpZHRoOnQsaGVpZ2h0OmkuZGF0YS5sZW5ndGgvdC80fTtmb3IoO3I+MDspe3ItLTtjb25zdCB0PWVbcl07bGV0IGg9MWUzO2Zvcig7IXQueCYmaC0tID4wOyl7Y29uc3QgZT1NYXRoLnJhbmRvbSgpKmQud2lkdGgscj1NYXRoLnJhbmRvbSgpKmQuaGVpZ2h0O3RoaXMuaXNDaXJjbGVJbnNpZGUoaSxkLndpZHRoLGUscix0LnJhZGl1cyxzLmhpZ2hlckFjY3VyYWN5LHMubWluQWxwaGEpJiYodGhpcy50b3VjaGVzUGxhY2VkQ2lyY2xlKGUscix0LnJhZGl1cyxhLHMuc3BhY2luZyl8fCh0Lng9ZSx0Lnk9cixhLnB1c2godCkpKX19cmV0dXJuIGF9LGlzRmlsbGVkOihpLHQsZSxzLHIpPT4odD1NYXRoLnJvdW5kKHQpLGU9TWF0aC5yb3VuZChlKSxpLmRhdGFbNCoocyplK3QpKzNdPnIpLGlzQ2lyY2xlSW5zaWRlKGksdCxlLHMscixhLGQpe2lmKCF0aGlzLmlzRmlsbGVkKGksZSxzLXIsdCxkKSlyZXR1cm4hMTtpZighdGhpcy5pc0ZpbGxlZChpLGUscytyLHQsZCkpcmV0dXJuITE7aWYoIXRoaXMuaXNGaWxsZWQoaSxlK3Iscyx0LGQpKXJldHVybiExO2lmKCF0aGlzLmlzRmlsbGVkKGksZS1yLHMsdCxkKSlyZXR1cm4hMTtpZihhKXtjb25zdCByPU1hdGguY29zKE1hdGguUEkvNCk7aWYoIXRoaXMuaXNGaWxsZWQoaSxlK3IscytyLHQsZCkpcmV0dXJuITE7aWYoIXRoaXMuaXNGaWxsZWQoaSxlLXIscytyLHQsZCkpcmV0dXJuITE7aWYoIXRoaXMuaXNGaWxsZWQoaSxlLXIscy1yLHQsZCkpcmV0dXJuITE7aWYoIXRoaXMuaXNGaWxsZWQoaSxlK3Iscy1yLHQsZCkpcmV0dXJuITF9cmV0dXJuITB9LHRvdWNoZXNQbGFjZWRDaXJjbGUoaSx0LGUscyxyKXtyZXR1cm4gcy5zb21lKChzPT50aGlzLmRpc3QoaSx0LHMueCxzLnkpPHMucmFkaXVzK2UrcikpfSxkaXN0KGksdCxlLHMpe2NvbnN0IHI9aS1lLGE9dC1zO3JldHVybiBNYXRoLnNxcnQocipyK2EqYSl9fTtzZWxmLm9ubWVzc2FnZT1pPT57cG9zdE1lc3NhZ2UoQ29yZV9kZWZhdWx0LnBhY2soaS5kYXRhLmltYWdlRGF0YSxpLmRhdGEuaW1hZ2VXaWR0aCxpLmRhdGEuc3BhcmVDaXJjbGVzLGkuZGF0YS5vcHRpb25zKSl9Ow==");
+      }
+      circles = await new Promise((resolve) => {
+        this.worker.onmessage = (e) => resolve(e.data);
+        this.worker.postMessage({
+          imageData,
+          imageWidth,
+          spareCircles: this.spareCircles,
+          options: this.options
+        });
+      });
+      if (!this.options.reuseWorker) {
+        this.worker.terminate();
       }
     }
+    this.dims = { width: imageWidth, height: imageData.data.length / imageWidth / 4 };
+    this.placedCircles = circles.reduce((acc, circle) => {
+      const color = this.getCircleColor(imageData, circle.x, circle.y);
+      if (color) {
+        circle.color = color;
+        acc.push(circle);
+      }
+      return acc;
+    }, []);
     return this.placedCircles;
   }
   asSVGString() {
@@ -168,17 +204,17 @@ var CirclePacker = class {
     return this.placedCircles;
   }
 };
-function fromImageData(imageData, imageWidth, options = {}) {
+async function fromImageData(imageData, imageWidth, options = {}) {
   const cf = new CirclePacker(options);
-  cf.render(imageData, imageWidth);
+  await cf.pack(imageData, imageWidth);
   return cf;
 }
-function fromContext2D(ctx, options = {}) {
-  return fromImageData(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height), ctx.canvas.width, options);
+async function fromContext2D(ctx, options = {}) {
+  return await fromImageData(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height), ctx.canvas.width, options);
 }
-function fromCanvas(canvas, options = {}) {
+async function fromCanvas(canvas, options = {}) {
   const ctx = canvas.getContext("2d");
-  return fromContext2D(ctx, options);
+  return await fromContext2D(ctx, options);
 }
 
 // src/ishihara.ts
@@ -363,7 +399,8 @@ async function ishihara_default(options = {}) {
     const textCorrectionCanvas = makeTextCorrectionCanvas(edgeLength, edgeLength, textX, textY, mergedOptions.text, mergedOptions.font, measurement);
     debugContext.drawImage(textCorrectionCanvas, 0, 0);
     debugContext.drawImage(mergedContext.canvas, edgeLength * 2, 0);
-    const packedCanvas = fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions).asCanvas({ scale: 1 });
+    const circlepackerInstance = await fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions);
+    const packedCanvas = circlepackerInstance.asCanvas({ scale: 1 });
     debugContext.drawImage(packedCanvas, edgeLength * 3, 0);
     const positionContext = makeContext(edgeLength, edgeLength);
     positionContext.drawImage(text, 0, 0);
@@ -387,7 +424,7 @@ async function ishihara_default(options = {}) {
       }
     });
   }
-  return fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions);
+  return await fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions);
 }
 
 // src/index.ts

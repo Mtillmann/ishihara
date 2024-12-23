@@ -219,7 +219,9 @@ export default async function (options: Partial<Options> = {}):Promise<CirclePac
     debugContext.drawImage(textCorrectionCanvas, 0, 0)
     debugContext.drawImage(mergedContext.canvas, edgeLength * 2, 0)
 
-    const packedCanvas = fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions).asCanvas({ scale: 1 })
+    const circlepackerInstance = await fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions)
+    const packedCanvas = circlepackerInstance.asCanvas({ scale: 1 })
+
     debugContext.drawImage(packedCanvas, edgeLength * 3, 0)
 
     const positionContext = makeContext(edgeLength, edgeLength)
@@ -246,5 +248,5 @@ export default async function (options: Partial<Options> = {}):Promise<CirclePac
     })
   }
 
-  return fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions)
+  return await fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions)
 }

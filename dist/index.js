@@ -181,7 +181,8 @@ async function ishihara_default(options = {}) {
     const textCorrectionCanvas = makeTextCorrectionCanvas(edgeLength, edgeLength, textX, textY, mergedOptions.text, mergedOptions.font, measurement);
     debugContext.drawImage(textCorrectionCanvas, 0, 0);
     debugContext.drawImage(mergedContext.canvas, edgeLength * 2, 0);
-    const packedCanvas = fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions).asCanvas({ scale: 1 });
+    const circlepackerInstance = await fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions);
+    const packedCanvas = circlepackerInstance.asCanvas({ scale: 1 });
     debugContext.drawImage(packedCanvas, edgeLength * 3, 0);
     const positionContext = makeContext(edgeLength, edgeLength);
     positionContext.drawImage(text, 0, 0);
@@ -205,7 +206,7 @@ async function ishihara_default(options = {}) {
       }
     });
   }
-  return fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions);
+  return await fromCanvas(mergedContext.canvas, mergedOptions.circlePackerOptions);
 }
 
 // src/index.ts
