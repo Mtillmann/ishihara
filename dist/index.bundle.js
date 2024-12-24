@@ -82,6 +82,9 @@ var CirclePacker = class {
     if (["transparent", null, "", false, void 0].includes(this.options.background)) {
       this.options.background = false;
     }
+    if (this.options.colors === "auto") {
+      this.options.colors = [];
+    }
     for (let i = 0; i < this.options.numCircles; i++) {
       this.spareCircles.push({
         radius: this.options.minRadius + Math.random() * Math.random() * (this.options.maxRadius - this.options.minRadius)
@@ -90,8 +93,8 @@ var CirclePacker = class {
     this.spareCircles.sort((a, b) => a.radius - b.radius);
   }
   getCircleColor(imageData, x, y) {
-    if (this.options.colors === "auto") {
-      x = Math.round(x);
+    if (this.options.colors.length === 0) {
+      x = Math.min(Math.round(x), this.dims.width - 1);
       y = Math.round(y);
       const i = (this.dims.width * y + x) * 4;
       if (imageData.data[i + 3] / 255 < this.options.minAlpha) {
